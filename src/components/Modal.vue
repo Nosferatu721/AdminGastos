@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import cerrarModal from '../assets/img/cerrar.svg'
 import Alerta from './Alerta.vue'
 
-const emit = defineEmits(['cerrar-modal', 'update:nombre', 'update:cantidad', 'update:categoria', 'guardar-gasto'])
+const emit = defineEmits(['cerrar-modal', 'update:nombre', 'update:cantidad', 'update:categoria', 'guardar-gasto', 'eliminar-gasto'])
 
 const error = ref('')
 
@@ -85,6 +85,10 @@ const agregarGasto = () => {
   // Si todo es válido, emitir el evento para guardar el gasto
   emit('guardar-gasto')
 }
+
+const isEditing = computed(() => {
+  return props.gastoId !== null && props.gastoId !== undefined
+})
 </script>
 <template>
   <div class="modal">
@@ -94,7 +98,7 @@ const agregarGasto = () => {
 
     <div class="contenedor contenedor-formulario" :class="[modal.animar ? 'animar' : 'cerrar']">
       <form class="nuevo-gasto" @submit.prevent="agregarGasto">
-        <legend>Añadir Gasto</legend>
+        <legend>{{ isEditing ? 'Actualizar Gasto' : 'Añadir Gasto' }}</legend>
         <Alerta v-if="error">{{ error }}</Alerta>
         <div class="campo">
           <label for="nombre">Nombre Gasto</label>
@@ -129,8 +133,10 @@ const agregarGasto = () => {
             <option value="suscripciones">Suscripciones</option>
           </select>
         </div>
-        <input type="submit" :value="gastoId ? 'Actualizar Gasto' : 'Añadir Gasto'" />
+        <input type="submit" :value="isEditing ? 'Actualizar Gasto' : 'Añadir Gasto'" />
       </form>
+
+      <button v-if="isEditing" type="button" class="btn-eliminar" @click="emit('eliminar-gasto', props.gastoId)">Eliminar Gasto</button>
     </div>
   </div>
 </template>
@@ -200,6 +206,18 @@ const agregarGasto = () => {
   background-color: var(--azul);
   color: var(--blanco);
   font-weight: 700;
+  cursor: pointer;
+}
+.btn-eliminar {
+  padding: 1rem;
+  width: 100%;
+  background-color: #EF4444;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 1.4rem;
+  border-radius: 1rem;
+  border: none;
+  margin-top: 10rem;
   cursor: pointer;
 }
 </style>

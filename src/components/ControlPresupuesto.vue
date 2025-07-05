@@ -1,38 +1,56 @@
 <script setup>
-import imagen from '../assets/img/grafico.jpg';
-import { formatearCantidad } from '../helpers';
+import 'vue3-circle-progress/dist/circle-progress.css'
+import CircleProgress from 'vue3-circle-progress'
+import imagen from '../assets/img/grafico.jpg'
+import { formatearCantidad } from '../helpers'
 
 const props = defineProps({
   presupuesto: {
     type: Number,
     default: 0,
-    required: true
+    required: true,
   },
   gastado: {
     type: Number,
     default: 0,
-    required: true
+    required: true,
   },
   disponible: {
     type: Number,
     default: 0,
-    required: true
-  }
-});
+    required: true,
+  },
+  calcularPorcentaje: {
+    type: Number,
+    default: 0,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['resetear-app'])
 </script>
 
 <template>
   <div class="dos-columnas">
     <div class="contenedor-grafico">
-      <img :src="imagen" alt="Gráfico de gastos" />
+      <circle-progress
+        :percent="calcularPorcentaje"
+        :is-gradient="true"
+        :gradient="{
+          angle: 90,
+          startColor: '#3498ab',
+          stopColor: '#2980f9',
+        }"
+      />
+      <span class="current-counter">{{ calcularPorcentaje }}%</span>
     </div>
     <div class="contenedor-presupuesto">
-      <button class="reset-app">Resetear App</button>
+      <button class="reset-app" @click="emit('resetear-app')">Resetear App</button>
       <p><span>Presupuesto:</span> {{ formatearCantidad(props.presupuesto) }}</p>
       <p><span>Disponible:</span> {{ formatearCantidad(props.disponible) }}</p>
       <p><span>Gastado:</span> {{ formatearCantidad(props.gastado) }}</p>
     </div>
-  </div> 
+  </div>
 </template>
 
 <style scoped>
@@ -52,7 +70,7 @@ const props = defineProps({
   font-size: 2.4rem;
   text-align: center;
   color: var(--gris-oscuro);
-  padding: .5rem;
+  padding: 0.5rem;
 }
 .contenedor-presupuesto span {
   font-weight: 900;
@@ -77,6 +95,17 @@ const props = defineProps({
 
 .reset-app:hover {
   background-color: #c0327b;
+}
+.contenedor-grafico {
+  position: relative;
+}
+.current-counter {
+  font-weight: 900;
+  font-size: 3rem;
+  color: #2980f9;
+  position: absolute;
+  top: 7.2rem;
+  left: 6.6rem;
 }
 
 @media (min-width: 768px) {

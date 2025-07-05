@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { uid } from 'uid'
 import iconoNuevoGasto from './assets/img/nuevo-gasto.svg'
 import Presupuesto from './components/Presupuesto.vue'
 import ControlPresupuesto from './components/ControlPresupuesto.vue'
 import Modal from './components/Modal.vue'
 import Gasto from './components/Gasto.vue'
+import Filtros from './components/Filtros.vue'
 
 const modal = ref({
   mostrar: false,
@@ -15,6 +16,7 @@ const modal = ref({
 const presupuesto = ref(0)
 const disponible = ref(0)
 const gastado = ref(0)
+const filtro = ref('all')
 
 const gasto = ref({
   nombre: '',
@@ -49,9 +51,9 @@ onMounted(() => {
   if (disponibleGuardado) disponible.value = Number(disponibleGuardado)
 
   if (gastosGuardados) {
-    gastos.value = JSON.parse(gastosGuardados).map(gasto => ({
+    gastos.value = JSON.parse(gastosGuardados).map((gasto) => ({
       ...gasto,
-      cantidad: Number(gasto.cantidad)
+      cantidad: Number(gasto.cantidad),
     }))
   }
 })
@@ -62,7 +64,9 @@ const definirPresupuesto = (cantidad) => {
     return
   }
   presupuesto.value = Number(cantidad)
+  disponible.value = Number(cantidad)
   localStorage.setItem('presupuesto', cantidad.toString())
+  localStorage.setItem('disponible', cantidad.toString())
 }
 
 const mostrarModal = () => {
@@ -93,7 +97,7 @@ const limpiarGasto = () => {
 const guardarGasto = () => {
   // Asegurar que cantidad sea un número
   gasto.value.cantidad = Number(gasto.value.cantidad)
-  
+
   if (gasto.value.id) {
     // Actualizar gasto existente
     const index = gastos.value.findIndex((g) => g.id === gasto.value.id)
@@ -112,6 +116,32 @@ const seleccionarGasto = (id) => {
   gasto.value = { ...gastoSeleccionado }
   mostrarModal()
 }
+const eliminarGasto = (id) => {
+  gastos.value = gastos.value.filter((gasto) => gasto.id !== id)
+  cerrarModal()
+}
+
+const gastosFiltrados = computed(() => {
+  if (filtro.value === 'all') return gastos.value
+  return gastos.value.filter((gasto) => gasto.categoria === filtro.value)
+})
+
+const calcularPorcentaje = computed(() => {
+  if (presupuesto.value === 0) return 0
+  return parseInt((gastado.value / presupuesto.value) * 100)
+})
+
+const resetearApp = () => {
+  presupuesto.value = 0
+  disponible.value = 0
+  gastado.value = 0
+  gastos.value = []
+  localStorage.removeItem('presupuesto')
+  localStorage.removeItem('gastado')
+  localStorage.removeItem('disponible')
+  localStorage.removeItem('gastos')
+  limpiarGasto()
+}
 </script>
 
 <template>
@@ -121,13 +151,21 @@ const seleccionarGasto = (id) => {
 
       <div class="contenedor-header contenedor sombra">
         <Presupuesto v-if="!presupuesto" @definir-presupuesto="definirPresupuesto" />
-        <ControlPresupuesto v-else :presupuesto="presupuesto" :gastado="gastado" :disponible="disponible" />
+        <ControlPresupuesto
+          v-else
+          :presupuesto="presupuesto"
+          :gastado="gastado"
+          :disponible="disponible"
+          @resetear-app="resetearApp"
+          :calcularPorcentaje="Number(calcularPorcentaje)"
+        />
       </div>
     </header>
-    <main>
+    <main v-if="presupuesto">
+      <Filtros v-model:filtro="filtro" />
       <div class="listado-gastos contenedor">
-        <h2>{{ gastos.length > 0 ? 'Listado de Gastos' : 'No hay gastos registrados' }}</h2>
-        <Gasto v-for="gasto in gastos" :key="gasto.id" :gasto="gasto" @seleccionar-gasto="seleccionarGasto" />
+        <h2>{{ gastosFiltrados.length > 0 ? 'Listado de Gastos' : 'No hay gastos registrados' }}</h2>
+        <Gasto v-for="gasto in gastosFiltrados" :key="gasto.id" :gasto="gasto" @seleccionar-gasto="seleccionarGasto" />
       </div>
       <div class="crear-gasto" v-if="presupuesto">
         <img :src="iconoNuevoGasto" alt="Icono nuevo gasto" @click="mostrarModal" />
@@ -146,6 +184,7 @@ const seleccionarGasto = (id) => {
         :gastado="gastado"
         :gastoId="gasto.id"
         :gastos="gastos"
+        @eliminar-gasto="eliminarGasto"
       />
     </main>
   </div>
@@ -223,7 +262,7 @@ header {
 }
 
 .listado-gastos {
-  margin-top: 10rem;
+  margin-top: 2rem;
 }
 .listado-gastos h2 {
   font-weight: 900;
